@@ -50,6 +50,7 @@ func tcpHandler(conn net.Conn) {
 			fmt.Println(err)
 			break
 		}
+		log.Println(string(buf))
 		_, err = conn.Write(buf[:n])
 		if err != nil {
 			fmt.Println(err)
