@@ -9,7 +9,6 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"sync"
 )
 
 func main() {
@@ -35,7 +34,7 @@ func StartTCPServer(port int, host string, maxPoolConnection int) error {
 				log.Println("Error creating connection")
 				panic(err)
 			}
-			go tcpHandler(conn)
+			go tcpHandler(conn) // One thread per client connection
 		}
 	}
 }
@@ -43,7 +42,6 @@ func StartTCPServer(port int, host string, maxPoolConnection int) error {
 func tcpHandler(conn net.Conn) {
 	defer conn.Close()
 	for {
-		var mutex sync.Mutex
 		buf := make([]byte, 1024)
 		n, err := conn.Read(buf)
 		if err != nil {
@@ -55,15 +53,13 @@ func tcpHandler(conn net.Conn) {
 			break
 		}
 		// buf, err = smokeTest00(buf)
-		mutex.Lock()
 		buf, err = primeTime01(buf, n)
 		if err != nil {
 			fmt.Println(err)
 			break
 		}
-		// fmt.Println("Responding:", string(buf))
+		fmt.Println("Responding:", string(append(buf, byte('\n'))))
 		_, err = conn.Write(append(buf, byte('\n')))
-		mutex.Unlock()
 		if err != nil {
 			fmt.Println(err)
 			break
@@ -97,11 +93,11 @@ type PrimeResp struct {
 }
 
 func primeTime01(buf []byte, n int) ([]byte, error) {
-	str := string(bytes.Trim(buf, "\x00"))
+	str := string(bytes.Trim(buf[:n], "\x00"))
+	fmt.Println("Received string:", str)
 	var req PrimeReq
 	err := json.Unmarshal([]byte(str), &req)
 	if err != nil {
-		fmt.Println("Received string:", str)
 		return nil, errors.New("Error parsing JSON: " + err.Error())
 	}
 	resp := PrimeResp{
