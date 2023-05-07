@@ -51,7 +51,7 @@ func tcpHandler(conn net.Conn, clients int) {
 		resp, err := primeTime01(req)
 		if err != nil {
 			fmt.Println("Malformed JSON")
-			conn.Write([]byte("Malformed JSON"))
+			conn.Write([]byte("Malformed JSON\n"))
 			break
 		}
 		conn.Write(append(resp, byte('\n')))
@@ -59,14 +59,35 @@ func tcpHandler(conn net.Conn, clients int) {
 }
 
 func primeTime01(buf []byte) ([]byte, error) {
-	var req PrimeReq
-	err := json.Unmarshal([]byte(buf), &req)
-	if err != nil || req.Method == nil || req.Number == nil || *req.Method != "isPrime" { // Not working when on field is not present
-		return nil, errors.New("Error parsing JSON: " + err.Error())
+	var reqMap map[string]json.RawMessage
+	err := json.Unmarshal(buf, &reqMap)
+	if err != nil {
+		return nil, errors.New("error parsing JSON: " + err.Error())
+	}
+	methodBytes, ok := reqMap["method"]
+	if !ok {
+		return nil, errors.New("method field not present")
+	}
+	numberBytes, ok := reqMap["number"]
+	if !ok {
+		return nil, errors.New("number field not present")
+	}
+	var method string
+	err = json.Unmarshal(methodBytes, &method)
+	if err != nil {
+		return nil, errors.New("error parsing method field: " + err.Error())
+	}
+	var number int
+	err = json.Unmarshal(numberBytes, &number)
+	if err != nil {
+		return nil, errors.New("error parsing number field: " + err.Error())
+	}
+	if method != "isPrime" {
+		return nil, errors.New("unknown method: " + method)
 	}
 	resp := PrimeResp{
 		Method: "isPrime",
-		Prime:  isPrime(*req.Number),
+		Prime:  isPrime(number),
 	}
 	return json.Marshal(resp)
 }
@@ -91,6 +112,7 @@ type PrimeReq struct {
 	Method *string `json:"method"`
 	Number *int    `json:"number"`
 }
+
 type PrimeResp struct {
 	Method string `json:"method"`
 	Prime  bool   `json:"prime"`
