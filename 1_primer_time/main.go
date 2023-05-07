@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
+	"math/big"
 	"net"
 	"strconv"
 )
@@ -50,7 +52,7 @@ func tcpHandler(conn net.Conn, clients int) {
 		log.Printf("Client %d received -> %s", clients, req)
 		resp, err := primeTime01(req)
 		if err != nil {
-			fmt.Println("Malformed JSON")
+			fmt.Println("Malformed JSON: ", err)
 			conn.Write([]byte("Malformed JSON\n"))
 			break
 		}
@@ -59,16 +61,16 @@ func tcpHandler(conn net.Conn, clients int) {
 }
 
 func primeTime01(buf []byte) ([]byte, error) {
-	var reqMap map[string]json.RawMessage
-	err := json.Unmarshal(buf, &reqMap)
+	var req map[string]json.RawMessage
+	err := json.Unmarshal(buf, &req)
 	if err != nil {
 		return nil, errors.New("error parsing JSON: " + err.Error())
 	}
-	methodBytes, ok := reqMap["method"]
+	methodBytes, ok := req["method"]
 	if !ok {
 		return nil, errors.New("method field not present")
 	}
-	numberBytes, ok := reqMap["number"]
+	numberBytes, ok := req["number"]
 	if !ok {
 		return nil, errors.New("number field not present")
 	}
@@ -77,7 +79,7 @@ func primeTime01(buf []byte) ([]byte, error) {
 	if err != nil {
 		return nil, errors.New("error parsing method field: " + err.Error())
 	}
-	var number int
+	var number json.Number
 	err = json.Unmarshal(numberBytes, &number)
 	if err != nil {
 		return nil, errors.New("error parsing number field: " + err.Error())
@@ -85,23 +87,48 @@ func primeTime01(buf []byte) ([]byte, error) {
 	if method != "isPrime" {
 		return nil, errors.New("unknown method: " + method)
 	}
-	resp := PrimeResp{
+	var resp PrimeResp
+	nu, err := number.Int64()
+	if err != nil {
+		log.Println(err)
+		// log.Println(nu)
+		var number float64
+		err = json.Unmarshal(numberBytes, &number)
+		log.Println(number)
+		resp = PrimeResp{
+			Method: "isPrime",
+			Prime:  false,
+		}
+		log.Println(number)
+		return json.Marshal(resp)
+	}
+	var req2 PrimeReq
+	err = json.Unmarshal(buf, &req2)
+	if err != nil {
+		return nil, errors.New("wrong type" + method)
+	}
+	resp = PrimeResp{
 		Method: "isPrime",
-		Prime:  isPrime(number),
+		Prime:  isPrime(nu),
+	}
+
+	if err != nil {
 	}
 	return json.Marshal(resp)
 }
 
-func smokeTest00(buf []byte, n int) ([]byte, error) {
-	return buf[:n], nil // Echo
+func isPrimeBig(num big.Int) bool {
+	return num.ProbablyPrime(10)
 }
 
-func isPrime(n int) bool {
-	if n <= 1 {
+func isPrime(num int64) bool {
+	if num < 2 {
+		fmt.Println("Number must be greater than 2.")
 		return false
 	}
-	for i := 2; i*i <= n; i++ {
-		if n%i == 0 {
+	sq_root := int(math.Sqrt(float64(num)))
+	for i := 2; i <= sq_root; i++ {
+		if num%int64(i) == 0 {
 			return false
 		}
 	}
@@ -110,7 +137,7 @@ func isPrime(n int) bool {
 
 type PrimeReq struct {
 	Method *string `json:"method"`
-	Number *int    `json:"number"`
+	Number *int64  `json:"number"`
 }
 
 type PrimeResp struct {
