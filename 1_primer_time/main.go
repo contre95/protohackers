@@ -1,11 +1,10 @@
 package main
 
 import (
-	"bytes"
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"strconv"
@@ -26,6 +25,7 @@ func StartTCPServer(port int, host string, maxPoolConnection int) error {
 		return err
 	}
 	var conns uint64
+	clients := 0
 	for {
 		if conns <= uint64(maxPoolConnection-1) {
 			// Holds inil a new connection is set
@@ -34,37 +34,41 @@ func StartTCPServer(port int, host string, maxPoolConnection int) error {
 				log.Println("Error creating connection")
 				panic(err)
 			}
-			go tcpHandler(conn) // One thread per client connection
+			fmt.Printf("Starting client %d\n", clients)
+			go tcpHandler(conn, clients) // One thread per client connection
+			clients++
 		}
 	}
 }
 
-func tcpHandler(conn net.Conn) {
+func tcpHandler(conn net.Conn, clients int) {
 	defer conn.Close()
-	for {
-		buf := make([]byte, 1024)
-		n, err := conn.Read(buf)
+	// buff := make([]byte, 1024)
+	scanner := bufio.NewScanner(conn)
+	for scanner.Scan() {
+		req := scanner.Bytes()
+		log.Printf("Client %d received -> %s", clients, req)
+		resp, err := primeTime01(req)
 		if err != nil {
-			if err == io.EOF {
-				fmt.Println("Reached EOF, closing connection")
-				fmt.Println(err)
-				break
-			}
+			fmt.Println("Malformed JSON")
+			conn.Write([]byte("Malformed JSON"))
 			break
 		}
-		// buf, err = smokeTest00(buf)
-		buf, err = primeTime01(buf, n)
-		if err != nil {
-			fmt.Println(err)
-			break
-		}
-		fmt.Println("Responding:", string(append(buf, byte('\n'))))
-		_, err = conn.Write(append(buf, byte('\n')))
-		if err != nil {
-			fmt.Println(err)
-			break
-		}
+		conn.Write(append(resp, byte('\n')))
 	}
+}
+
+func primeTime01(buf []byte) ([]byte, error) {
+	var req PrimeReq
+	err := json.Unmarshal([]byte(buf), &req)
+	if err != nil || req.Method == nil || req.Number == nil || *req.Method != "isPrime" { // Not working when on field is not present
+		return nil, errors.New("Error parsing JSON: " + err.Error())
+	}
+	resp := PrimeResp{
+		Method: "isPrime",
+		Prime:  isPrime(*req.Number),
+	}
+	return json.Marshal(resp)
 }
 
 func smokeTest00(buf []byte, n int) ([]byte, error) {
@@ -84,25 +88,10 @@ func isPrime(n int) bool {
 }
 
 type PrimeReq struct {
-	Method string `json:"method"`
-	Number int    `json:"number"`
+	Method *string `json:"method"`
+	Number *int    `json:"number"`
 }
 type PrimeResp struct {
 	Method string `json:"method"`
 	Prime  bool   `json:"prime"`
-}
-
-func primeTime01(buf []byte, n int) ([]byte, error) {
-	str := string(bytes.Trim(buf[:n], "\x00"))
-	fmt.Println("Received string:", str)
-	var req PrimeReq
-	err := json.Unmarshal([]byte(str), &req)
-	if err != nil {
-		return nil, errors.New("Error parsing JSON: " + err.Error())
-	}
-	resp := PrimeResp{
-		Method: "isPrime",
-		Prime:  isPrime(req.Number),
-	}
-	return json.Marshal(resp)
 }
