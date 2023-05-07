@@ -90,16 +90,10 @@ func primeTime01(buf []byte) ([]byte, error) {
 	var resp PrimeResp
 	nu, err := number.Int64()
 	if err != nil {
-		log.Println(err)
-		// log.Println(nu)
-		var number float64
-		err = json.Unmarshal(numberBytes, &number)
-		log.Println(number)
 		resp = PrimeResp{
 			Method: "isPrime",
 			Prime:  false,
 		}
-		log.Println(number)
 		return json.Marshal(resp)
 	}
 	var req2 PrimeReq
