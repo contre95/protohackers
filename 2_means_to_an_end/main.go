@@ -44,6 +44,8 @@ func StartTCPServer(port int, host string, maxPoolConnection int) error {
 }
 func meansToAnEnd02(buff []byte, size int) ([]byte, error) {
 	// fmt.Println("Received: ", buff)
+	db := map[uint32]uint32{}
+	var resp []byte
 	t, x, y, err := deserializeMsg(buff)
 	if err != nil {
 		log.Println("Error deserializing message: ", err)
@@ -51,13 +53,20 @@ func meansToAnEnd02(buff []byte, size int) ([]byte, error) {
 	}
 	switch t {
 	case &INSERT:
-		timestamps := x
-		price := y
+		timestamp := *x
+		price := *y
+		db[timestamp] = price
 	case &QUERY:
-
+		total, count := uint32(0), uint32(0)
+		for i := *x; i < *y; i++ {
+			if v, ok := db[i]; ok {
+				total += v
+				count++
+			}
+		}
+		binary.BigEndian.PutUint32(resp, total/count)
 	}
-	fmt.Println(t, x, y)
-	return nil, nil
+	return resp, nil
 }
 
 func deserializeMsg(msg []byte) (*string, *uint32, *uint32, error) {
