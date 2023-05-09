@@ -90,9 +90,11 @@ func primeTime01(buf []byte) ([]byte, error) {
 	var resp PrimeResp
 	nu, err := number.Int64()
 	if err != nil {
+		var z big.Int
+		z.SetString(number.String(), 10)
 		resp = PrimeResp{
 			Method: "isPrime",
-			Prime:  false,
+			Prime:  z.ProbablyPrime(10),
 		}
 		return json.Marshal(resp)
 	}
@@ -109,10 +111,6 @@ func primeTime01(buf []byte) ([]byte, error) {
 	if err != nil {
 	}
 	return json.Marshal(resp)
-}
-
-func isPrimeBig(num big.Int) bool {
-	return num.ProbablyPrime(10)
 }
 
 func isPrime(num int64) bool {
