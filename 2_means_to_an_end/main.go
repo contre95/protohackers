@@ -54,7 +54,7 @@ func tcpHandler(conn net.Conn, clients int) {
 			fmt.Println("Can't read from connection: ", err)
 			break
 		}
-		log.Printf("Client %d received -> %s of size: %d", clients, buff, size)
+		fmt.Printf("Client %d received -> %s (%b) of size: %d\n", clients, string(buff[0]), buff, size)
 		resp, err := meansToAnEnd02(buff, 0, db)
 		if err != nil {
 			fmt.Println(err)
@@ -71,12 +71,15 @@ func meansToAnEnd02(buff []byte, size int, db map[uint32]uint32) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	switch t {
-	case &INSERT:
+	fmt.Println("Checking ", *t)
+	switch *t {
+	case INSERT:
+		fmt.Println("Inserting ", *y, " at time ", *y)
 		timestamp := *x
 		price := *y
 		db[timestamp] = price
-	case &QUERY:
+	case QUERY:
+		fmt.Println("Queryiing MIX MAX : ", *x, *y)
 		total, count := uint32(0), uint32(0)
 		for i := *x; i < *y; i++ {
 			if v, ok := db[i]; ok {
@@ -84,20 +87,25 @@ func meansToAnEnd02(buff []byte, size int, db map[uint32]uint32) ([]byte, error)
 				count++
 			}
 		}
-		binary.BigEndian.PutUint32(resp, total/count)
+		if count > 0 {
+			binary.BigEndian.PutUint32(resp, total/count)
+		}
 	}
 	fmt.Println("Responding: ", resp)
 	return resp, nil
 }
 
 func deserializeMsg(msg []byte) (*string, *uint32, *uint32, error) {
+	// if len(msg) != 9 {
+	// 	return nil, nil, nil, errors.New("Message is not 9 bytes of length")
+	// }
 	reqType := string(msg[0])
 	if reqType != "I" && reqType != "Q" {
 		fmt.Println(reqType, msg[0])
 		return nil, nil, nil, errors.New(fmt.Sprintln("Invalid type: ", reqType, msg[0]))
 	}
 	i1, i2 := binary.BigEndian.Uint32(msg[1:5]), binary.BigEndian.Uint32(msg[5:])
-	fmt.Println(reqType, i1, i2)
+	// fmt.Println(reqType, i1, i2)
 	return &reqType, &i1, &i2, nil
 
 }
