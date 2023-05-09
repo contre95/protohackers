@@ -42,13 +42,33 @@ func StartTCPServer(port int, host string, maxPoolConnection int) error {
 		}
 	}
 }
-func meansToAnEnd02(buff []byte, size int) ([]byte, error) {
-	// fmt.Println("Received: ", buff)
+
+func tcpHandler(conn net.Conn, clients int) {
+	defer conn.Close()
+	// scanner := bufio.NewScanner(conn)
 	db := map[uint32]uint32{}
+	for {
+		buff := make([]byte, 9)
+		size, err := conn.Read(buff)
+		if err != nil {
+			fmt.Println("Can't read from connection: ", err)
+			break
+		}
+		log.Printf("Client %d received -> %s of size: %d", clients, buff, size)
+		resp, err := meansToAnEnd02(buff, 0, db)
+		if err != nil {
+			fmt.Println(err)
+			conn.Write([]byte("Invalid request\n"))
+			continue
+		}
+		conn.Write(resp)
+	}
+}
+
+func meansToAnEnd02(buff []byte, size int, db map[uint32]uint32) ([]byte, error) {
 	var resp []byte
 	t, x, y, err := deserializeMsg(buff)
 	if err != nil {
-		log.Println("Error deserializing message: ", err)
 		return nil, err
 	}
 	switch t {
@@ -66,34 +86,18 @@ func meansToAnEnd02(buff []byte, size int) ([]byte, error) {
 		}
 		binary.BigEndian.PutUint32(resp, total/count)
 	}
+	fmt.Println("Responding: ", resp)
 	return resp, nil
 }
 
 func deserializeMsg(msg []byte) (*string, *uint32, *uint32, error) {
 	reqType := string(msg[0])
-	if reqType != "I" && reqType != "O" {
-		return nil, nil, nil, errors.New("Wrong type")
+	if reqType != "I" && reqType != "Q" {
+		fmt.Println(reqType, msg[0])
+		return nil, nil, nil, errors.New(fmt.Sprintln("Invalid type: ", reqType, msg[0]))
 	}
 	i1, i2 := binary.BigEndian.Uint32(msg[1:5]), binary.BigEndian.Uint32(msg[5:])
+	fmt.Println(reqType, i1, i2)
 	return &reqType, &i1, &i2, nil
 
-}
-
-func tcpHandler(conn net.Conn, clients int) {
-	defer conn.Close()
-	for {
-		buff := make([]byte, 9)
-		size, err := conn.Read(buff)
-		if err != nil {
-			log.Println("Error while reading from connection: ", err)
-			break
-		}
-		resp, err := meansToAnEnd02(buff, size)
-		if err != nil {
-			fmt.Println("Malformed JSON: ", err)
-			conn.Write([]byte("Malformed JSON\n"))
-			break
-		}
-		conn.Write(append(resp, byte('\n')))
-	}
 }
