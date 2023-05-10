@@ -78,19 +78,19 @@ func meansToAnEnd02(buff []byte, db map[int32]int32) ([]byte, error) {
 		db[*x] = *y
 	case QUERY:
 		// fmt.Println("Querying MIX MAX : ", *x, *y)
-		total, count := int32(0), int32(0)
+		total, count := int64(0), int64(0)
 		for i := *x; i <= *y; i++ {
 			if v, ok := db[i]; ok {
-				total += v
+				total += int64(v)
 				count++
 			}
 		}
 		var r int64 = 0
 		if count > 0 {
-			r = int64(total) / int64(count)
+			r = total / count
 		}
-		binary.BigEndian.PutUint64(resp, uint64(r))
-		fmt.Printf("Ansering: %d - %b\n", int64(binary.BigEndian.Uint32(resp)), resp)
+		binary.BigEndian.PutUint32(resp, uint32(r))
+		fmt.Printf("Ansering: %d - %b\n", int32(binary.BigEndian.Uint32(resp)), resp)
 		return resp, nil
 	}
 	return nil, nil

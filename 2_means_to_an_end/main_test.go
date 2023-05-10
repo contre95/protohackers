@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"testing"
 )
 
@@ -48,7 +47,6 @@ func TestMeansToAnEnd02(t *testing.T) {
 	db := map[int32]int32{}
 	var resp = make([]byte, 4)
 	for _, h := range orderedSmaples {
-		fmt.Println(db)
 		sample, err := hex.DecodeString(h)
 		resp, err = meansToAnEnd02(sample, db)
 		if err != nil {
