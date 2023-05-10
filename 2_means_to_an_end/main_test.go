@@ -3,13 +3,14 @@ package main
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"testing"
 )
 
 type Results struct {
 	reqType string
-	x       uint32
-	y       uint32
+	x       int32
+	y       int32
 }
 
 var samples = map[string]Results{
@@ -44,17 +45,18 @@ func TestDeserializeMsg(t *testing.T) {
 }
 
 func TestMeansToAnEnd02(t *testing.T) {
-	db := map[uint32]uint32{}
+	db := map[int32]int32{}
 	var resp = make([]byte, 4)
 	for _, h := range orderedSmaples {
+		fmt.Println(db)
 		sample, err := hex.DecodeString(h)
 		resp, err = meansToAnEnd02(sample, db)
 		if err != nil {
 			t.Errorf("Error: %v", err)
 		}
 	}
-	var correct uint32 = 101
-	if binary.BigEndian.Uint32(resp) != correct {
+	var correct int32 = 101
+	if int32(binary.BigEndian.Uint32(resp)) != correct {
 		t.Errorf("Incorrect answer. Answer is %d and should be %d", binary.BigEndian.Uint32(resp), correct)
 	}
 }

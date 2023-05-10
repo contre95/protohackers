@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -45,10 +46,10 @@ func StartTCPServer(port int, host string, maxPoolConnection int) error {
 
 func tcpHandler(conn net.Conn, clients int) {
 	defer conn.Close()
-	db := map[uint32]uint32{}
+	db := map[int32]int32{}
 	for {
 		buff := make([]byte, 9)
-		size, err := conn.Read(buff)
+		size, err := io.ReadFull(conn, buff)
 		if err != nil {
 			fmt.Println("Can't read from connection: ", err)
 			break
@@ -64,7 +65,7 @@ func tcpHandler(conn net.Conn, clients int) {
 	}
 }
 
-func meansToAnEnd02(buff []byte, db map[uint32]uint32) ([]byte, error) {
+func meansToAnEnd02(buff []byte, db map[int32]int32) ([]byte, error) {
 	var resp = make([]byte, 4)
 	t, x, y, err := deserializeMsg(buff)
 	if err != nil {
@@ -73,33 +74,32 @@ func meansToAnEnd02(buff []byte, db map[uint32]uint32) ([]byte, error) {
 	switch *t {
 	case INSERT:
 		fmt.Println("Inserting ", *y, " at time ", *x)
-		timestamp := *x
-		price := *y
-		db[timestamp] = price
+		db[*x] = *y
 	case QUERY:
 		fmt.Println("Querying MIX MAX : ", *x, *y)
-		total, count := uint32(0), uint32(0)
+		total, count := int32(0), int32(0)
 		for i := *x; i <= *y; i++ {
 			if v, ok := db[i]; ok {
 				total += v
 				count++
 			}
 		}
-		var r uint32 = 0
+		var r int32 = 0
 		if count > 0 {
 			r = total / count
 		}
-		binary.BigEndian.PutUint32(resp, r)
+		binary.BigEndian.PutUint32(resp, uint32(r))
+		return resp, nil
 	}
-	fmt.Printf("Ansering: %d - %b\n", binary.BigEndian.Uint16(resp), resp)
-	return resp, nil
+	fmt.Printf("Ansering: %d - %b\n", int32(binary.BigEndian.Uint32(resp)), resp)
+	return nil, nil
 }
 
-func deserializeMsg(msg []byte) (*string, *uint32, *uint32, error) {
+func deserializeMsg(msg []byte) (*string, *int32, *int32, error) {
 	reqType := string(msg[0])
 	if reqType != "I" && reqType != "Q" {
-		return nil, nil, nil, errors.New(fmt.Sprintln("Invalid type: ", reqType, msg[0]))
+		return nil, nil, nil, errors.New(fmt.Sprintf("Invalid type: %s - %b ", reqType, msg[0]))
 	}
-	i1, i2 := binary.BigEndian.Uint32(msg[1:5]), binary.BigEndian.Uint32(msg[5:])
+	i1, i2 := int32(binary.BigEndian.Uint32(msg[1:5])), int32(binary.BigEndian.Uint32(msg[5:]))
 	return &reqType, &i1, &i2, nil
 }
