@@ -12,24 +12,28 @@ type Results struct {
 }
 
 func TestDeserializeMsg(t *testing.T) {
-	sample1, _ := hex.DecodeString("490000303900000065") //  I 12345 101
-	sample2, _ := hex.DecodeString("490000303a00000066") //  I 12346 102
-	sample3, _ := hex.DecodeString("490000303b00000064") //I12347100
-	sample4, _ := hex.DecodeString("490000a00000000005") //I409605
-	sample5, _ := hex.DecodeString("510000300000004000") //Q1228816384
-
-    samples := map[string]Results{sample1: Results{"I"}, sample2, sample3, sample4, sample5}
-	for i, sample := range samples {
-		if len(sample) != 9 {
-			t.Errorf("Invalid test sample %d. Invalid hex sample", i)
+	samples := map[string]Results{
+		"490000303900000065": {"I", 12345, 101},
+		"490000303a00000066": {"I", 12346, 102},
+		"490000303b00000064": {"I", 12347, 100},
+		"490000a00000000005": {"I", 40960, 5},
+		"510000300000004000": {"Q", 12288, 16384},
+	}
+	for h, r := range samples {
+		sample, err := hex.DecodeString(h)
+		if err != nil {
+			t.Errorf("Invalid test sample %v. Invalid hex sample", h)
 		}
-	}
-	l, x, y, err := deserializeMsg(sample)
-	if err != nil {
-		t.Error("deserializeMsg failed when it shouldn't: ", err)
-	}
-	if *l != "I" || *y != 101 || *x != 12345 {
-		t.Errorf("Wrong deserialze function (%s,%d,%d) should be equal to (I,12345,101)", *l, *x, *y)
+		if len(sample) != 9 {
+			t.Errorf("Invalid test sample %v. Invalid hex sample", h)
+		}
+		l, x, y, err := deserializeMsg(sample)
+		if err != nil {
+			t.Error("deserializeMsg failed when it shouldn't: ", err)
+		}
+		if *l != r.reqType || *x != r.x || *y != r.y {
+			t.Errorf("Wrong deserialze function (%s,%d,%d) should be equal to (I,12345,101)", *l, *x, *y)
+		}
 	}
 }
 
