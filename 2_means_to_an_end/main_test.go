@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"testing"
 )
 
@@ -47,10 +46,6 @@ func TestDeserializeMsg(t *testing.T) {
 func TestMeansToAnEnd02(t *testing.T) {
 	db := map[uint32]uint32{}
 	var resp = make([]byte, 4)
-	fmt.Println(resp)
-	fmt.Println(resp)
-	fmt.Println(resp)
-	fmt.Println(resp)
 	for _, h := range orderedSmaples {
 		sample, err := hex.DecodeString(h)
 		resp, err = meansToAnEnd02(sample, 0, db)
@@ -59,7 +54,7 @@ func TestMeansToAnEnd02(t *testing.T) {
 		}
 	}
 	var correct uint32 = 101
-	if binary.BigEndian.Uint32(resp) == correct {
+	if binary.BigEndian.Uint32(resp) != correct {
 		t.Errorf("Incorrect answer. Answer is %d and should be %d", binary.BigEndian.Uint32(resp), correct)
 	}
 }
