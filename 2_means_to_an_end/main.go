@@ -50,6 +50,7 @@ func tcpHandler(conn net.Conn, clients int) {
 	for {
 		buff := make([]byte, 9)
 		size, err := io.ReadFull(conn, buff)
+		// size, err := conn.Read(buff) // This doesn't work :(
 		if err != nil {
 			fmt.Println("Can't read from connection: ", err)
 			break
@@ -73,10 +74,10 @@ func meansToAnEnd02(buff []byte, db map[int32]int32) ([]byte, error) {
 	}
 	switch *t {
 	case INSERT:
-		fmt.Println("Inserting ", *y, " at time ", *x)
+		// fmt.Println("Inserting ", *y, " at time ", *x)
 		db[*x] = *y
 	case QUERY:
-		fmt.Println("Querying MIX MAX : ", *x, *y)
+		// fmt.Println("Querying MIX MAX : ", *x, *y)
 		total, count := int32(0), int32(0)
 		for i := *x; i <= *y; i++ {
 			if v, ok := db[i]; ok {
@@ -89,9 +90,9 @@ func meansToAnEnd02(buff []byte, db map[int32]int32) ([]byte, error) {
 			r = total / count
 		}
 		binary.BigEndian.PutUint32(resp, uint32(r))
+		fmt.Printf("Ansering: %d - %b\n", int32(binary.BigEndian.Uint32(resp)), resp)
 		return resp, nil
 	}
-	fmt.Printf("Ansering: %d - %b\n", int32(binary.BigEndian.Uint32(resp)), resp)
 	return nil, nil
 }
 
