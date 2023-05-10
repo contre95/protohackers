@@ -48,7 +48,7 @@ func TestMeansToAnEnd02(t *testing.T) {
 	var resp = make([]byte, 4)
 	for _, h := range orderedSmaples {
 		sample, err := hex.DecodeString(h)
-		resp, err = meansToAnEnd02(sample, 0, db)
+		resp, err = meansToAnEnd02(sample, db)
 		if err != nil {
 			t.Errorf("Error: %v", err)
 		}
