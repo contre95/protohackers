@@ -85,12 +85,12 @@ func meansToAnEnd02(buff []byte, db map[int32]int32) ([]byte, error) {
 				count++
 			}
 		}
-		var r int32 = 0
+		var r int64 = 0
 		if count > 0 {
-			r = total / count
+			r = int64(total) / int64(count)
 		}
-		binary.BigEndian.PutUint32(resp, uint32(r))
-		fmt.Printf("Ansering: %d - %b\n", int32(binary.BigEndian.Uint32(resp)), resp)
+		binary.BigEndian.PutUint64(resp, uint64(r))
+		fmt.Printf("Ansering: %d - %b\n", int64(binary.BigEndian.Uint32(resp)), resp)
 		return resp, nil
 	}
 	return nil, nil
