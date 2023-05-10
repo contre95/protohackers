@@ -32,17 +32,10 @@ func TestDeserializeMsg(t *testing.T) {
 			t.Error("deserializeMsg failed when it shouldn't: ", err)
 		}
 		if *l != r.reqType || *x != r.x || *y != r.y {
-			t.Errorf("Wrong deserialze function (%s,%d,%d) should be equal to (I,12345,101)", *l, *x, *y)
+			t.Errorf("Wrong deserialze function (%s,%d,%d) should be equal to (%s,%d,%d)", *l, *x, *y, r.reqType, r.x, r.y)
 		}
 	}
 }
 
-// func TestMeansToAnEnd02(t *testing.T) {
-// 	sample, err := hex.DecodeString("49 00 00 30 39 00 00 00 65")
-// 	db := map[uint32]uint32{}
-// 	_, err = meansToAnEnd02(sample, 0, db)
-// 	if err != nil {
-// 		t.Error("Test failed")
-// 	}
-// 	// fmt.Println(string(resp))
-// }
+func TestMeansToAnEnd02(t *testing.T) {
+}
