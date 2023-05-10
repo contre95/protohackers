@@ -45,7 +45,6 @@ func StartTCPServer(port int, host string, maxPoolConnection int) error {
 
 func tcpHandler(conn net.Conn, clients int) {
 	defer conn.Close()
-	// scanner := bufio.NewScanner(conn)
 	db := map[uint32]uint32{}
 	for {
 		buff := make([]byte, 9)
@@ -55,7 +54,7 @@ func tcpHandler(conn net.Conn, clients int) {
 			break
 		}
 		fmt.Printf("Client %d received -> %s (%b) of size: %d\n", clients, string(buff[0]), buff, size)
-		resp, err := meansToAnEnd02(buff, 0, db)
+		resp, err := meansToAnEnd02(buff, db)
 		if err != nil {
 			fmt.Println(err)
 			conn.Write([]byte("Invalid request\n"))
@@ -65,13 +64,12 @@ func tcpHandler(conn net.Conn, clients int) {
 	}
 }
 
-func meansToAnEnd02(buff []byte, size int, db map[uint32]uint32) ([]byte, error) {
+func meansToAnEnd02(buff []byte, db map[uint32]uint32) ([]byte, error) {
 	var resp = make([]byte, 4)
 	t, x, y, err := deserializeMsg(buff)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(db)
 	switch *t {
 	case INSERT:
 		fmt.Println("Inserting ", *y, " at time ", *x)
